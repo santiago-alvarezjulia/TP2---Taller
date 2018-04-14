@@ -6,16 +6,16 @@ Paquete_Tornillos::Paquete_Tornillos(string id_tornillo,
 size_t capacidad_paquete) {
 	this->capacidad = capacidad_paquete;
 	this->tornillos_dentro = 0;
-	this->esta_lleno_paquete = false;
-	this->id_paquete = id_tornillo;
+	this->is_full = false;
+	this->id = id_tornillo;
 	this->array_ancho_tornillos = new size_t[capacidad_paquete];
 }
 	
-void Paquete_Tornillos::agregar_tornillo(size_t ancho_tornillo) {
+void Paquete_Tornillos::agregar_tornillos(size_t cant_tornillos, size_t ancho_tornillo) {
 	this->array_ancho_tornillos[tornillos_dentro] = ancho_tornillo;
-	this->tornillos_dentro++;
+	this->tornillos_dentro += cant_tornillos;
 	if (this->tornillos_dentro == this->capacidad) {
-		this->esta_lleno_paquete = true;
+		this->is_full = true;
 	}
 }
 		
@@ -27,12 +27,12 @@ size_t Paquete_Tornillos::get_tornillos_dentro() const {
 	return this->tornillos_dentro;
 }
 		
-string Paquete_Tornillos::get_id_paquete() const {
-	return this->id_paquete;
+string Paquete_Tornillos::get_id() const {
+	return this->id;
 }
 		
 bool Paquete_Tornillos::esta_lleno() const {
-	return this->esta_lleno_paquete;
+	return this->is_full;
 }
 		
 int Paquete_Tornillos::get_mediana() const {

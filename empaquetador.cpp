@@ -1,10 +1,9 @@
 #include <string>
 #include <bitset>
 #include <iostream>
-#include <map>
 #include <math.h>
-#include "Paquete_Tornillos.h"
 #include "File.h"
+#include "Paquetes.h"
 #define ERROR_FOPEN "no se pudo conectar con el dispositivo"
 #define OK_FOPEN "se pudo conectar con el dispositivo "
 #define DELIM_CFG "="
@@ -25,7 +24,7 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 	std::ios_base::openmode flags_config = ios::in;
 	File config (array_nombre_archivos[1], flags_config);
 	
-	std::map<string, Paquete_Tornillos> paquetes;
+	Paquetes paquetes;
 	string line;
 	string id;
 	string nombre_descriptivo;
@@ -42,14 +41,13 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 		nombre_descriptivo = line.substr(0, index_delim_not_id);
 
 		limite_paquete = line.substr(index_delim_not_id + 1);
-		/* // anda mal esta parte, paquete solo vive en este scope
-		 * // creo q esta explicado en movimiento de objetos .pdf
-		//creo paquetes (map de string-paquete_tornillos)
-		Paquete_Tornillos paquete (id, atoi(limite_paquete.c_str()));
-		paquetes.insert(pair<string, Paquete_Tornillos> (id, paquete));
+		/* anda mal esta parte, paquete solo vive en este scope
+		 * creo q esta explicado en movimiento de objetos .pdf (move semantics)
 		*/
+		paquetes.agregar_paquete(id, limite_paquete);
+		
 	}
-	
+
 	// abro y uso clasificadores
 	for (int i = 2; i < largo_array_nombres; i++) {
 		std::ios_base::openmode flags_clasificador = 
@@ -68,6 +66,7 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 		<< nombre_clasificador << endl;
 		
 		// muevo puntero del File para contar la cantidad de clasificaciones
+		// finalmente vuelvo a la posicion actual
 		std::ios_base::seekdir end = std::ios::end;
 		std::ios_base::seekdir begin = std::ios::beg;
 		std::ios_base::seekdir current = std::ios::cur;
@@ -96,7 +95,7 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 			// aca mira si esta atascado
 			if (bitset_clasificacion.count() == TAMANIO_WORD) {
 				cerr << nombre_clasificador << " atascado" << endl;
-				break;
+				break; //deja de leer esa clasificacion, sigue con las otras
 			}
 			
 			size_t tipo_tornillo = 0;
@@ -129,7 +128,9 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 				cont++;
 			}
 
-			// agregar info a paquetes almacenados en el map
+			// agrego info a paquetes almacenados en el map
+			//paquetes.agregar_tornillos(tipo_tornillo, cant_tornillos, 
+			//ancho_tornillos);
 		}
 	}
 	return TODO_OK;
