@@ -8,15 +8,41 @@ File::File(const char* name, std::ios_base::openmode flags) {
 	this->file.open(name, flags);
 	if (!this->file) {
 		std::cerr << name << ": " << ERROR_FOPEN << std::endl;
-		throw std::exception();
 	}
+	this->filename = name;
 }
+
+
+File::File(File&& other) {
+	this->file = std::move(other.file);
+	this->filename = other.filename;
+	
+	//other.file = nullptr; //puede que aca falle valgrind
+	other.filename = "";
+}
+
+
+
+void File::set_name(string name) {
+	this->filename = name;
+}
+
+
+string File::get_name() {
+	return this->filename;
+}
+
+
+bool File::fail_open() {
+	return this->file.fail() == 1;
+}
+
 
 bool File::eof() {
 	return this->file.eof();
 }
 
-void File::get_line(string line) {
+void File::get_line(string& line) {
 	getline(this->file, line);
 }
 

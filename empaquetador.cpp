@@ -2,17 +2,18 @@
 #include <bitset>
 #include <iostream>
 #include <math.h>
+#include <vector>
 #include "File.h"
 #include "Paquetes.h"
-#define ERROR_FOPEN "no se pudo conectar con el dispositivo"
-#define OK_FOPEN "se pudo conectar con el dispositivo "
+#define POS_CONFIG_FILE 1
+#define OK_FOPEN "se establece conexion con el dispositivo "
 #define DELIM_CFG "="
 #define DELIM_NOT_ID ","
 #define DELIM_CLASIFICADOR '\0'
-#define TAMANIO_BYTE 8
-#define TAMANIO_WORD 32
+#define BYTE_SIZE 8
+#define WORD_SIZE 32
 #define ERROR 1
-#define TODO_OK 0
+#define OK 0
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -20,9 +21,48 @@ using std::string;
 using std::ios;
 
 
+std::vector<File> open_files(int largo_array_nombres, 
+char* array_nombre_archivos[]) {
+	std::vector<File> files_vector;
+	for (int i = 2; i < largo_array_nombres; i++) {
+			std::ios_base::openmode flags_clasificador = 
+			std::ios::in | std::ios::binary;
+			File clasificador(array_nombre_archivos[i], flags_clasificador);
+			
+			// me fijo si hubo error al intentar abrir el archivo
+			if (clasificador.fail_open()) {
+				continue;
+			} 
+			char byte_leido;
+		
+			// do while para sacar el nombre del clasificador
+			string nombre_clasificador;
+			while (true) {
+				clasificador.read(&byte_leido, sizeof(char));
+				if (byte_leido == DELIM_CLASIFICADOR) {
+					break;
+				}
+				nombre_clasificador.push_back(byte_leido);
+			}
+			// me pude conectar con el dispositivo
+			cout << array_nombre_archivos[i] << ": " << OK_FOPEN 
+			<< nombre_clasificador << endl;
+			clasificador.set_name(nombre_clasificador);
+			files_vector.push_back(std::move(clasificador));
+	}
+	return files_vector;
+}
+
+void informe_remanentes(Paquetes packages) {
+	// se ordenan por el numero de tipo
+	cout << "# Informe de remanentes" << endl;
+	packages.printf_remanentes();
+}
+
+
 int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 	std::ios_base::openmode flags_config = ios::in;
-	File config (array_nombre_archivos[1], flags_config);
+	File config(array_nombre_archivos[POS_CONFIG_FILE], flags_config);
 	
 	Paquetes paquetes;
 	string line;
@@ -32,6 +72,9 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 	
 	while (!config.eof()) {
 		config.get_line(line);
+		if (line.empty()) {
+			break;
+		}
 
 		size_t index_delim_cfg = line.find(DELIM_CFG);
 		id = line.substr(0, index_delim_cfg);
@@ -41,29 +84,17 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 		nombre_descriptivo = line.substr(0, index_delim_not_id);
 
 		limite_paquete = line.substr(index_delim_not_id + 1);
-		/* anda mal esta parte, paquete solo vive en este scope
-		 * creo q esta explicado en movimiento de objetos .pdf (move semantics)
-		*/
-		paquetes.agregar_paquete(id, limite_paquete);
-		
-	}
 
+		paquetes.add_package((size_t)atoi(id.c_str()), nombre_descriptivo, 
+		(size_t)atoi(limite_paquete.c_str()));
+	}
+	
+	std::vector<File> vector_files = open_files(largo_array_nombres, 
+	array_nombre_archivos);
+	char byte_leido;
 	// abro y uso clasificadores
-	for (int i = 2; i < largo_array_nombres; i++) {
-		std::ios_base::openmode flags_clasificador = 
-		std::ios::in | std::ios::binary;
-		File clasificador (array_nombre_archivos[i], flags_clasificador);
-		
-		char byte_leido;
-		
-		// do while para sacar el nombre del clasificador
-		string nombre_clasificador;
-		do {
-			clasificador.read(&byte_leido, sizeof(char));
-			nombre_clasificador.push_back(byte_leido);
-		} while (byte_leido != DELIM_CLASIFICADOR);
-		cout << array_nombre_archivos[i] << ": " << OK_FOPEN 
-		<< nombre_clasificador << endl;
+	for (unsigned int i = 0; i < vector_files.size(); i++) {
+		File clasificador = std::move(vector_files[i]);
 		
 		// muevo puntero del File para contar la cantidad de clasificaciones
 		// finalmente vuelvo a la posicion actual
@@ -75,27 +106,30 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 		size_t pos_final_archivo = clasificador.tell_g();
 		clasificador.seek_g(0, begin);
 		clasificador.seek_g(pos_actual, current);
-		size_t cantidad_clasificaciones = (pos_final_archivo - pos_actual) / 4; //devuelve 5 para simple42	
-		
-		// for para leer las tuplas de 4 bytes y guardar tipo, cantidad y ancho en bitset
-		std::bitset<TAMANIO_WORD> bitset_clasificacion;
+		//devuelve 5 para simple42
+		size_t cantidad_clasificaciones = (pos_final_archivo - pos_actual) / 4; 
+			
+		// for para leer las tuplas de 4 bytes y guardar tipo, cantidad y 
+		// ancho en bitset
+		std::bitset<WORD_SIZE> bitset_clasificacion;
 		for (size_t i = 0; i < cantidad_clasificaciones; i++) {
 			size_t largo_clasificacion = 4; //en bytes
 			size_t cont_bits = 0; // para poner los 32 bits en bitset
 			for (size_t j = 0; j < largo_clasificacion; j++) {
 				clasificador.read(&byte_leido, sizeof(char));
 				
-				for (size_t l = 0; l < TAMANIO_BYTE; l++) {
+				for (size_t l = 0; l < BYTE_SIZE; l++) {
 					// 0x80 = 1000 0000
 					bitset_clasificacion.set(cont_bits, 
 					(bool)((byte_leido << l) & 0x80));
 					cont_bits++;
 				}
 			}
-			// aca mira si esta atascado
-			if (bitset_clasificacion.count() == TAMANIO_WORD) {
-				cerr << nombre_clasificador << " atascado" << endl;
-				break; //deja de leer esa clasificacion, sigue con las otras
+			// aca miro si esta atascado, en ese caso leo la siguiente tupla de
+			// 4 bytes
+			if (bitset_clasificacion.count() == WORD_SIZE) {
+				cerr << clasificador.get_name() << " atascado" << endl;
+				continue;
 			}
 			
 			size_t tipo_tornillo = 0;
@@ -109,8 +143,12 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 				}
 				cont++;
 			}
-			// verificar que el tipo de tornillo sea valido
-			// if tipo no pertenece como key al map de paquetes, no es valido
+			// verifico que el tipo de tornillo sea valido, en caso contrario
+			// leo la siguiente tupla de 4 bytes
+			if (!paquetes.is_valid_screw(tipo_tornillo)) {
+				cerr << "Tipo de tornillo invalido: " << tipo_tornillo << endl;
+				continue;
+			}
 			
 			cont = 0;
 			for (size_t k = 26; k > 4; k--) {
@@ -127,11 +165,10 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 				}
 				cont++;
 			}
-
-			// agrego info a paquetes almacenados en el map
-			//paquetes.agregar_tornillos(tipo_tornillo, cant_tornillos, 
-			//ancho_tornillos);
+			// agrego info a paquetes 
+			paquetes.add_screws(tipo_tornillo, cant_tornillos, ancho_tornillos); 
 		}
 	}
-	return TODO_OK;
+	informe_remanentes(paquetes); //mirar pasaje de objetos
+	return OK;
 }
