@@ -19,11 +19,12 @@ using std::cerr;
 using std::endl;
 using std::string;
 using std::ios;
+using std::vector;
+using std::thread;
 
 
-std::vector<File> open_files(int largo_array_nombres, 
-char* array_nombre_archivos[]) {
-	std::vector<File> files_vector;
+vector<File> open_files(int largo_array_nombres, char* nombre_archivos[]) {
+	vector<File> files_vector;
 	for (int i = 2; i < largo_array_nombres; i++) {
 			std::ios_base::openmode flags_clasificador = 
 			std::ios::in | std::ios::binary;
@@ -60,7 +61,24 @@ void informe_remanentes(Paquetes packages) {
 }
 
 
-int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
+File cant_clasificaciones(File file, size_t* cant_clasif) {
+	// muevo puntero del File para contar la cantidad de clasificaciones
+	// finalmente vuelvo a la posicion actual
+	std::ios_base::seekdir end = std::ios::end;
+	std::ios_base::seekdir begin = std::ios::beg;
+	std::ios_base::seekdir current = std::ios::cur;
+	size_t pos_actual = file.tell_g(); 
+	file.seek_g(0, end);
+	size_t pos_final_archivo = file.tell_g();
+	file.seek_g(0, begin);
+	file.seek_g(pos_actual, current);
+	
+	*cant_clasif = (pos_final_archivo - pos_actual) / 4;
+	return file; 
+}
+
+ 
+int empaquetador(int largo_array_nombres, char* nombre_archivos[]) {
 	std::ios_base::openmode flags_config = ios::in;
 	File config(array_nombre_archivos[POS_CONFIG_FILE], flags_config);
 	
@@ -72,6 +90,7 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 	
 	while (!config.eof()) {
 		config.get_line(line);
+		// para el caso el que el eof se encuentra en una linea "vacia"
 		if (line.empty()) {
 			break;
 		}
@@ -89,26 +108,28 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 		(size_t)atoi(limite_paquete.c_str()));
 	}
 	
-	std::vector<File> vector_files = open_files(largo_array_nombres, 
-	array_nombre_archivos);
+	vector<File> files = open_files(largo_array_nombres, nombre_archivos);
+	
+	
+	vector<thread> threads;
+	
+	
+	
+	
+	
+	
+	// encapsular en una clase abstracta (clasificador) con un metodo run 
+	// abstracto y sobreescribir el operator()
+	// 03 del tuto
+	
 	char byte_leido;
 	// abro y uso clasificadores
-	for (unsigned int i = 0; i < vector_files.size(); i++) {
-		File clasificador = std::move(vector_files[i]);
+	for (unsigned int i = 0; i < files.size(); i++) {
+		File clasificador = std::move(files[i]);
 		
-		// muevo puntero del File para contar la cantidad de clasificaciones
-		// finalmente vuelvo a la posicion actual
-		std::ios_base::seekdir end = std::ios::end;
-		std::ios_base::seekdir begin = std::ios::beg;
-		std::ios_base::seekdir current = std::ios::cur;
-		size_t pos_actual = clasificador.tell_g(); //falta un +1?
-		clasificador.seek_g(0, end);
-		size_t pos_final_archivo = clasificador.tell_g();
-		clasificador.seek_g(0, begin);
-		clasificador.seek_g(pos_actual, current);
-		//devuelve 5 para simple42
-		size_t cantidad_clasificaciones = (pos_final_archivo - pos_actual) / 4; 
-			
+		size_t cantidad_clasificaciones;
+		File clasificador_bis = std::move(cant_clasificaciones(std::move(clasificador), &cantidad_clasificaciones));
+		
 		// for para leer las tuplas de 4 bytes y guardar tipo, cantidad y 
 		// ancho en bitset
 		std::bitset<WORD_SIZE> bitset_clasificacion;
@@ -116,7 +137,7 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 			size_t largo_clasificacion = 4; //en bytes
 			size_t cont_bits = 0; // para poner los 32 bits en bitset
 			for (size_t j = 0; j < largo_clasificacion; j++) {
-				clasificador.read(&byte_leido, sizeof(char));
+				clasificador_bis.read(&byte_leido, sizeof(char));
 				
 				for (size_t l = 0; l < BYTE_SIZE; l++) {
 					// 0x80 = 1000 0000
@@ -128,13 +149,11 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 			// aca miro si esta atascado, en ese caso leo la siguiente tupla de
 			// 4 bytes
 			if (bitset_clasificacion.count() == WORD_SIZE) {
-				cerr << clasificador.get_name() << " atascado" << endl;
+				cerr << clasificador_bis.get_name() << " atascado" << endl;
 				continue;
 			}
 			
 			size_t tipo_tornillo = 0;
-			size_t cant_tornillos = 0;
-			size_t ancho_tornillos = 0; 
 			
 			int cont = 0;
 			for (int k = 4; k >= 0; k--) {
@@ -149,6 +168,9 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 				cerr << "Tipo de tornillo invalido: " << tipo_tornillo << endl;
 				continue;
 			}
+			
+			size_t cant_tornillos = 0;
+			size_t ancho_tornillos = 0; 
 			
 			cont = 0;
 			for (size_t k = 26; k > 4; k--) {
@@ -169,6 +191,12 @@ int empaquetador(int largo_array_nombres, char* array_nombre_archivos[]) {
 			paquetes.add_screws(tipo_tornillo, cant_tornillos, ancho_tornillos); 
 		}
 	}
+	
+	for (int i = 0; i < files.size(); i++) {
+		threads[i].join();
+	}
+	
+	
 	informe_remanentes(paquetes); //mirar pasaje de objetos
 	return OK;
 }
