@@ -85,5 +85,4 @@ Paquetes::~Paquetes() {
 		//cout << "it->first del end: " << this->mutexes.end()->first <<endl;
 		delete it->second;
 	}
-	
 }

@@ -1,4 +1,5 @@
 #include "Clasificador.h"
+#include <string>
 #include <iostream>
 #include <bitset>
 #include <math.h>
@@ -11,7 +12,8 @@ using std::string;
 using std::ios;
 using std::vector;
 
-Clasificador::Clasificador(Paquetes& packages, File* file_) : packages(packages){
+Clasificador::Clasificador(Paquetes& packages, File* file_) : 
+packages(packages) {
 	this->file = std::move(file_);
 }
 
@@ -37,7 +39,8 @@ void Clasificador::run(){
 	size_t cantidad_clasificaciones;
 	char byte_leido;
 	// abro y uso clasificadores
-	this->file = std::move(cant_clasificaciones(std::move(this->file), &cantidad_clasificaciones));
+	this->file = std::move(cant_clasificaciones(std::move(this->file), 
+	&cantidad_clasificaciones));
 		
 	// for para leer las tuplas de 4 bytes y guardar tipo, cantidad y 
 	// ancho en bitset
