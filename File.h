@@ -12,6 +12,7 @@ class File {
 	public:
 		File(const char* name, std::ios_base::openmode flags);
 		File(File&& other);
+		File& operator=(File&& file);
 		bool fail_open();
 		bool eof();
 		void set_name(string name);

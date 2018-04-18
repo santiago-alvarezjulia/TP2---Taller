@@ -3,11 +3,14 @@
 
 #include <map>
 #include <string>
+#include <mutex>
 #include "Paquete_Tornillos.h"
+#include "Lock.h"
 using std::string;
 
 class Paquetes {
 	std::map<size_t, Paquete_Tornillos> paquetes;
+	std::map<size_t, std::mutex*> mutexes;
 	void cambiar_paquete_lleno(size_t id);
 	
 	public:

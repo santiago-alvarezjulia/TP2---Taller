@@ -17,10 +17,20 @@ File::File(File&& other) {
 	this->file = std::move(other.file);
 	this->filename = other.filename;
 	
-	//other.file = nullptr; //puede que aca falle valgrind
 	other.filename = "";
 }
 
+File& File::operator=(File&& other) {
+	if (this == &other) {
+		return *this;
+	}
+	
+	this->file = std::move(other.file);
+	this->filename = other.filename;
+	
+	other.filename = "";
+	return *this;
+}
 
 
 void File::set_name(string name) {
@@ -42,23 +52,27 @@ bool File::eof() {
 	return this->file.eof();
 }
 
+
 void File::get_line(string& line) {
 	getline(this->file, line);
 }
+
 
 void File::read(char* byte_leido, size_t n) {
 	this->file.read(byte_leido, n);
 }
 
+
 size_t File::tell_g() {
 	return this->file.tellg();
 } 
+
 
 void File::seek_g(size_t a, std::ios_base::seekdir dir) {
 	this->file.seekg(a, dir);
 }
 
+
 File::~File() {
 	this->file.close();
 }
-
