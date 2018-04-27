@@ -18,8 +18,6 @@ class File {
 		std::string get_name();
 		void get_line(std::string& line);
 		void read(char* buffer, size_t n);
-		size_t tell_g();
-		void seek_g(size_t a, std::ios_base::seekdir dir);
 		~File();
 };
 

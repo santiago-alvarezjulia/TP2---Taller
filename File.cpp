@@ -63,16 +63,6 @@ void File::read(char* byte_leido, size_t n) {
 }
 
 
-size_t File::tell_g() {
-	return this->file.tellg();
-} 
-
-
-void File::seek_g(size_t a, std::ios_base::seekdir dir) {
-	this->file.seekg(a, dir);
-}
-
-
 File::~File() {
 	this->file.close();
 }

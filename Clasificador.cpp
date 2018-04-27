@@ -3,13 +3,15 @@
 #include <iostream>
 #include <bitset>
 #include <math.h>
-#define BYTE_SIZE 8
+#define LEN_CLASIFICATION 4
 #define WORD_SIZE 32
+#define BYTE_SIZE 8
 using std::cerr;
 using std::endl;
 using std::string;
 using std::ios;
 using std::vector;
+using std::bitset;
 
 Clasificador::Clasificador(Packages& packages, File* file_) : 
 packages(packages) {
@@ -21,55 +23,42 @@ void Clasificador::run(){
 	// while para leer las tuplas de 4 bytes y guardar tipo, cantidad y 
 	// ancho en bitset
 	char byte_leido;
-	std::bitset<WORD_SIZE> bitset_clasificacion;
-	size_t largo_clasificacion = 4; //en bytes
+	bitset<WORD_SIZE> bitset_clasificacion;
+	bitset<5> id;
+	bitset<22> cant_tornillos;
+	bitset<5> ancho_tornillos;
 	
 	while (true) {
-		size_t cont_bits = 0; // para poner los 32 bits en bitset
-		for (size_t j = 0; j < largo_clasificacion; j++) {
+		size_t cont_bits = 31; // para poner los 32 bits en bitset
+		for (size_t j = 0; j < LEN_CLASIFICATION; j++) {
 			this->file->read(&byte_leido, sizeof(char));
 			for (size_t l = 0; l < BYTE_SIZE; l++) {
 				// 0x80 = 1000 0000
 				bitset_clasificacion.set(cont_bits, 
 				(bool)((byte_leido << l) & 0x80));
-				cont_bits++;
+				cont_bits--;
 			}
 		}
 		if (this->file->eof()) {
 			break;
 		}
-		
-		size_t tipo_tornillo = 0;
-		int cont = 0;
-		
-		for (int k = 4; k >= 0; k--) {
-			if (bitset_clasificacion[k]) {
-				tipo_tornillo += pow(2, cont);
-			}
-			cont++;
+
+		size_t l = 0;
+		for (; l < 5; l++) {
+			ancho_tornillos.set(l, bitset_clasificacion[l]);
 		}
-		
-		size_t cant_tornillos = 0;
-		size_t ancho_tornillos = 0; 
-		cont = 0;
-		
-		for (size_t k = 26; k > 4; k--) {
-			if (bitset_clasificacion[k]) {
-				cant_tornillos += pow(2, cont);
-			}
-			cont++;
+		for (int i = 0; l < 27; l++) {
+			cant_tornillos.set(i, bitset_clasificacion[l]);
+			i++;
 		}
-		
-		cont = 0;
-		for (size_t k = 31; k > 26; k--) {
-			if (bitset_clasificacion[k]) {
-				ancho_tornillos += pow(2, cont);
-			}
-			cont++;
+		for (int j = 0; l < 32; l++) {
+			id.set(j, bitset_clasificacion[l]);
+			j++;
 		}
 		
 		// agrego info a Packages 
-		this->packages.add_screws(tipo_tornillo, cant_tornillos, ancho_tornillos, 
+		this->packages.add_screws((size_t)id.to_ulong(), 
+		(size_t)cant_tornillos.to_ulong(), (size_t)ancho_tornillos.to_ulong(), 
 		this->file->get_name()); 
 	}
 }
