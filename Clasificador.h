@@ -1,13 +1,13 @@
 #include "Thread.h"
-#include "Paquetes.h"
+#include "Packages.h"
 #include "File.h"
 
 class Clasificador : public Thread {
-	Paquetes& packages;
+	Packages& packages;
 	File* file;
 	File* cant_clasificaciones(File* file, size_t* cant_clasif);
 	
 	public:
-		Clasificador(Paquetes& packages, File* file);
+		Clasificador(Packages& packages, File* file);
 		virtual void run() override;
 };
