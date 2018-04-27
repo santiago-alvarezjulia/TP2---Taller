@@ -46,7 +46,7 @@ char* nombre_archivos[]) {
 		if (clasificador.fail_open()) {
 			continue;
 		}
-		 
+		clasificador.set_name(nombre_archivos[i]);
 		files_vector.push_back(std::move(clasificador));
 	}
 	return files_vector;
@@ -94,8 +94,9 @@ void Empaquetador::set_clasification_files() {
 			nombre_clasificador.push_back(byte_leido);
 		}
 		// me pude conectar con el dispositivo
-		cout << this->filename_array[i + 1] << ": " << OK_FOPEN 
+		cout << this->files[i].get_name() << ": " << OK_FOPEN 
 		<< nombre_clasificador << endl;
+		// cambio el nombre del archivo .bin por el que esta dentro del archivo
 		this->files[i].set_name(nombre_clasificador);
 	}
 }

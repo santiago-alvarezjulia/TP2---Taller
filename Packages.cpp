@@ -39,10 +39,12 @@ size_t ancho_tornillos, string filename) {
 	// leo la siguiente tupla de 4 bytes
 	int valid = this->is_valid_screw(id, cant_tornillos, ancho_tornillos);
 	if (valid == 1) {
-		fprintf_error_invalid_id(id);
+		Fprintf_protected printer;
+		printer.fprintf_error_invalid_id(id);
 		return;
 	} else if (valid == 2) {
-		fprintf_error_atascado(filename);
+		Fprintf_protected printer;
+		printer.fprintf_error_atascado(filename);
 		return;
 	}
 	Lock lock(*this->mutexes.at(id));
@@ -83,11 +85,12 @@ void Packages::printf_remanentes() {
 
 int Packages::is_valid_screw(size_t id, size_t cant_tornillos, 
 size_t ancho_tornillos) {
-	// agregar verificacion atascado (si esta atascado devuelvo 2)
+	// si esta atascado devuelvo 2
 	if (id == BITS_SET_5 && cant_tornillos == BITS_SET_22 && 
 	ancho_tornillos == BITS_SET_5) {
 		return 2;
 	}
+	// si el id es invalido devuelvo 1
 	std::map<size_t, Screw_Package>::iterator it = this->packages.find(id);
 	if(it == this->packages.end()) {
 		return 1;

@@ -3,8 +3,16 @@
 
 #include <iostream>
 #include <string>
+#include <mutex>
 
-void fprintf_error_invalid_id(size_t id);
-void fprintf_error_atascado(std::string filename);
+class Fprintf_protected {
+	std::mutex mutex;
+	
+	public:
+		Fprintf_protected();
+		void fprintf_error_invalid_id(size_t id);
+		void fprintf_error_atascado(std::string filename);
+		~Fprintf_protected();
+};
 
 #endif // FPRINTF_PROTECTED_H
