@@ -3,10 +3,12 @@
 #define ERROR 1
 #define OK 0
 #define CANTIDAD_MINIMA_PARAMETROS 3
+using std::cerr;
+using std::endl;
 
 int main(int argc, char* argv[]) {
 	if (argc < CANTIDAD_MINIMA_PARAMETROS) {
-		std::cerr << "Error de parametros" << std::endl;
+		cerr << "Error de parametros" << endl;
 		return ERROR;
 	}
 	Empaquetador empaquetador(argc, argv);
